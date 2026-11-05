@@ -1,0 +1,119 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'release/v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.arch }} package
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: amd64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes cmake g++ libgtest-dev dpkg-dev
+
+      - name: Validate release tag and project version
+        id: version
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          if [[ ! "${tag}" =~ ^release/v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo "Invalid release tag: ${tag} (expected release/vX.Y.Z)" >&2
+            exit 1
+          fi
+          version="${BASH_REMATCH[1]}"
+          project_version="$(sed -nE 's/^[[:space:]]*VERSION[[:space:]]+([0-9]+\.[0-9]+\.[0-9]+)[[:space:]]*$/\1/p' CMakeLists.txt | head -n 1)"
+          if [[ -z "${project_version}" || "${version}" != "${project_version}" ]]; then
+            echo "Tag version ${version} does not match CMakeLists.txt version ${project_version:-<not found>}" >&2
+            exit 1
+          fi
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Configure, build, and test
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DROM_BUILD_TESTS=ON
+          cmake --build build --parallel
+          ctest --test-dir build --output-on-failure
+
+      - name: Package Debian binary
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          package_root="${RUNNER_TEMP}/rom-sdk-package"
+          mkdir -p "${package_root}"
+          DESTDIR="${package_root}" cmake --install build
+          mkdir -p "${package_root}/DEBIAN" "${package_root}/etc/ld.so.conf.d"
+          printf '%s\n' '/opt/rom/lib' > "${package_root}/etc/ld.so.conf.d/rom.conf"
+
+          cat > "${package_root}/DEBIAN/control" <<EOF
+          Package: rom-sdk
+          Version: ${VERSION}
+          Section: libs
+          Priority: optional
+          Architecture: ${ARCH}
+          Maintainer: Open-Source-Robotics-For-Myanmar
+          Depends: libc6 (>= 2.39), libstdc++6 (>= 13)
+          Description: C++17 SDK for ROM Robotics
+           ROM Robotics tools and robotics libraries with CMake package configuration.
+          EOF
+
+          printf '%s\n' '#!/bin/sh' 'set -e' 'ldconfig' > "${package_root}/DEBIAN/postinst"
+          printf '%s\n' '#!/bin/sh' 'set -e' 'ldconfig' > "${package_root}/DEBIAN/postrm"
+          chmod 755 "${package_root}/DEBIAN/postinst" "${package_root}/DEBIAN/postrm"
+
+          package="rom-sdk_${VERSION}_${ARCH}.deb"
+          dpkg-deb --build --root-owner-group "${package_root}" "${package}"
+          sha256sum "${package}" > "${package}.sha256"
+
+      - name: Upload release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: rom-sdk-${{ matrix.arch }}
+          path: |
+            rom-sdk_*.deb
+            rom-sdk_*.deb.sha256
+          if-no-files-found: error
+          retention-days: 1
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: rom-sdk-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="${TAG#release/v}"
+          gh release create "${TAG}" release-assets/* \
+            --verify-tag \
+            --title "rom_sdk ${version}" \
+            --generate-notes

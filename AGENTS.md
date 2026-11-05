@@ -1,0 +1,29 @@
+- AGENTS_for_markdown.md ကို လိုက်နာပါ။
+- C++ 17
+- CMakeLists.txt version 3.16...3.28
+- make install , make uninstall ထည့်ပေးရန်။
+- Google ရဲ့ C++ 17 မှာ လိုက်နာတဲ့ naming system, သို့မဟုတ် C++ 17 official အကြံပြု naming system တခုခုသုံးရန်
+- naming rule အရ namespace များအားလုံးသည် lower case
+- class များသည် စာလုံးအကြီးနဲ့စ CamelCase
+- ဒါအပြင် directories များအားလုံးသည် namespace name သို့မဟုတ် sub namespace name ဖြစ်ရမည်။
+- file များအားလုံးသည် Class, Structure name များဖြစ်ရမည်။
+- root namespace သည် rom directory ဖြစ်ပြီး ကျန် namespace များအားလုံး သူ့အောက်မှာ directory hirachery အရ ဖြစ်ရမည်။
+- နောင်တွင် rom_sdk ကို cpu အလိုက် build လို့ရအောင် ပြုလုပ်ရန် ( intel , rockchip )
+- header (.h) နဲ့ source (.cc) ကို namespace directory တစ်ခုတည်းမှာ အတူထားပါ။ Google နဲ့ Abseil က ဒီပုံစံသုံးပါတယ်။
+- Numeric type:
+  - Control၊ pose၊ GPS၊ ပုံမှန်တွက်ချက်မှု → `double`
+  - Point cloud၊ image၊ NN tensor လို array အကြီး → `float`
+  - Time/duration → `std::chrono` (raw ဆိုရင် `int64_t` nanoseconds)
+  - Overflow ဖြစ်နိုင်တဲ့ counter → `int64_t`၊ ပုံမှန် integer → `int`
+  - Protocol/hardware field → `<cstdint>` fixed-width type
+  - `long`, `long long`, `short` မသုံးရ
+
+- Byte data → `uint8_t`/`int8_t` (`char` က ARM မှာ unsigned ဖြစ်လို့ မသုံးရ)
+- Protocol buffer → `std::memcpy` နဲ့ ကူး (`reinterpret_cast` မသုံးရ)
+- Floating point test → `EXPECT_NEAR` (Intel/ARM ရလဒ် bit-for-bit မတူနိုင်)
+- Target: Intel x86_64 နဲ့ Rockchip AArch64 (RK3588/RK3568)။ 32-bit ARMv7 ကို support လုပ်ရင် `int64_t`/`double` hot loop တွေ စစ်ရမည်
+
+- currly bracket
+  - BasedOnStyle: Google
+  - Standard: c++17
+  - BreakBeforeBraces: Allman

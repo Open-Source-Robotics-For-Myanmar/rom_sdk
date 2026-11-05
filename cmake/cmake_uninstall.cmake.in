@@ -1,0 +1,76 @@
+# Removes every file recorded in install_manifest.txt, then removes the
+# directories that only rom created (include/rom/..., lib/cmake/rom). Shared
+# directories such as /usr/local/lib are never removed. If the install prefix
+# itself is dedicated to rom (e.g. /opt/rom), its empty directories are
+# removed as well.
+set(manifest "@CMAKE_BINARY_DIR@/install_manifest.txt")
+
+if(NOT EXISTS "${manifest}")
+  message(FATAL_ERROR "Cannot find install manifest: ${manifest}")
+endif()
+
+file(STRINGS "${manifest}" files)
+set(dirs_to_check "")
+
+# install_manifest.txt does not include DESTDIR; honor it the same way
+# `DESTDIR=... cmake --install` does.
+if(DEFINED ENV{DESTDIR} AND NOT "$ENV{DESTDIR}" STREQUAL "")
+  list(TRANSFORM files PREPEND "$ENV{DESTDIR}")
+endif()
+
+foreach(file IN LISTS files)
+  message(STATUS "Uninstalling: ${file}")
+  if(IS_SYMLINK "${file}" OR EXISTS "${file}")
+    file(REMOVE "${file}")
+    if(IS_SYMLINK "${file}" OR EXISTS "${file}")
+      message(FATAL_ERROR "Failed to remove: ${file}")
+    endif()
+  else()
+    message(STATUS "File does not exist: ${file}")
+  endif()
+
+  # Find the rom-owned root directory for this file.
+  set(stop_dir "")
+  foreach(marker "/include/rom/" "/cmake/rom/")
+    string(FIND "${file}" "${marker}" pos)
+    if(pos GREATER -1)
+      string(LENGTH "${marker}" marker_len)
+      math(EXPR root_len "${pos} + ${marker_len} - 1")
+      string(SUBSTRING "${file}" 0 ${root_len} stop_dir)
+      break()
+    endif()
+  endforeach()
+
+  # A prefix named "rom" (e.g. /opt/rom) is owned by rom entirely.
+  string(REGEX MATCH "^(.*/rom)/(include|lib[^/]*|bin|share)/" prefix_match "${file}")
+  if(prefix_match)
+    set(stop_dir "${CMAKE_MATCH_1}")
+  endif()
+
+  if(stop_dir)
+    get_filename_component(dir "${file}" DIRECTORY)
+    list(APPEND dirs_to_check "${dir}|${stop_dir}")
+  endif()
+endforeach()
+
+# Remove empty directories bottom-up, never going above their stop_dir.
+foreach(entry IN LISTS dirs_to_check)
+  string(REPLACE "|" ";" parts "${entry}")
+  list(GET parts 0 dir)
+  list(GET parts 1 stop_dir)
+  string(LENGTH "${stop_dir}" stop_len)
+  while(IS_DIRECTORY "${dir}")
+    string(LENGTH "${dir}" dir_len)
+    if(dir_len LESS stop_len)
+      break()
+    endif()
+    file(GLOB children "${dir}/*" "${dir}/.*")
+    list(FILTER children EXCLUDE REGEX "/\\.\\.?$")
+    if(children)
+      break()
+    endif()
+    message(STATUS "Removing empty directory: ${dir}")
+    file(REMOVE_RECURSE "${dir}")
+    get_filename_component(dir "${dir}" DIRECTORY)
+  endwhile()
+endforeach()

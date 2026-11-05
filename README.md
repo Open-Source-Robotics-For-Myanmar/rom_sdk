@@ -34,7 +34,7 @@ ctest --test-dir build --output-on-failure
 `release/vX.Y.Z` tag တင်လိုက်လျှင် GitHub Actions က `CMakeLists.txt` version နှင့် စစ်ဆေးပြီး x86_64 (`amd64`) နှင့် AArch64 (`arm64`) အတွက် build/test လုပ်ကာ `.deb` package နှင့် SHA-256 checksum ပါသော GitHub Release ကို ထုတ်ပေးသည်။ [Releases](https://github.com/Open-Source-Robotics-For-Myanmar/rom_sdk/releases) မှ ကိုယ့်စက်၏ architecture နဲ့ ကိုက်ညီသော `rom-sdk_VERSION_amd64.deb` သို့မဟုတ် `rom-sdk_VERSION_arm64.deb` နှင့် သက်ဆိုင်ရာ `.sha256` ဖိုင်ကို download လုပ်ပါ။
 
 ```bash
-sha256sum -c rom-sdk_VERSION_amd64.deb.sha256  # AArch64 တွင် amd64 ကို arm64 ဖြင့် အစားлуулပါ
+sha256sum -c rom-sdk_VERSION_amd64.deb.sha256  # AArch64 တွင် amd64 ကို arm64 ဖြင့် အစားထိုးပါ
 sudo apt install ./rom-sdk_VERSION_amd64.deb
 ```
 

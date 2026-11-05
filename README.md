@@ -31,14 +31,14 @@ ctest --test-dir build --output-on-failure
 
 ### $\color{cyan}{\text{Release package (binary)}}$
 
-`release/vX.Y.Z` tag တင်လိုက်လျှင် GitHub Actions က `CMakeLists.txt` version နှင့် စစ်ဆေးပြီး x86_64 (`amd64`) နှင့် AArch64 (`arm64`) အတွက် build/test လုပ်ကာ `.deb` package နှင့် SHA-256 checksum ပါသော GitHub Release ကို ထုတ်ပေးသည်။ [Releases](https://github.com/Open-Source-Robotics-For-Myanmar/rom_sdk/releases) မှ ကိုယ့်စက်၏ architecture နဲ့ ကိုက်ညီသော `rom-sdk_VERSION_amd64.deb` သို့မဟုတ် `rom-sdk_VERSION_arm64.deb` နှင့် သက်ဆိုင်ရာ `.sha256` ဖိုင်ကို download လုပ်ပါ။
+`release/vX.Y.Z` tag တင်လိုက်လျှင် GitHub Actions က `CMakeLists.txt` version နှင့် စစ်ဆေးပြီး x86_64 (`amd64`) နှင့် AArch64 (`arm64`) အတွက် build/test လုပ်ကာ `.deb` package နှင့် SHA-256 checksum ပါသော GitHub Release ကို ထုတ်ပေးသည်။ Package များကို Ubuntu 24.04 သို့မဟုတ် `libc6` 2.39 နှင့် `libstdc++6` 13 နှင့်အထက်ရှိသော ကိုက်ညီသည့် distro များတွင် သုံးပါ။ [Releases](https://github.com/Open-Source-Robotics-For-Myanmar/rom_sdk/releases) မှ ကိုယ့်စက်၏ architecture နဲ့ ကိုက်ညီသော `rom-sdk_VERSION_amd64.deb` သို့မဟုတ် `rom-sdk_VERSION_arm64.deb` နှင့် သက်ဆိုင်ရာ `.sha256` ဖိုင်ကို download လုပ်ပါ။
 
 ```bash
 sha256sum -c rom-sdk_VERSION_amd64.deb.sha256  # AArch64 တွင် amd64 ကို arm64 ဖြင့် အစားထိုးပါ
 sudo apt install ./rom-sdk_VERSION_amd64.deb
 ```
 
-`VERSION` ကို Release version ဖြင့် အစားထိုးပါ။ Install လုပ်ပြီးနောက် `-DCMAKE_PREFIX_PATH=/opt/rom` ဖြင့် SDK ကိုသုံးနိုင်သည်။ ဖယ်ရှားရန် `sudo apt remove rom-sdk` ကို သုံးပါ။ Binary package နဲ့ source script install ကို တစ်ပြိုင်တည်း မရောသုံးပါနှင့်။
+`VERSION` ကို Release version ဖြင့် အစားထိုးပါ။ Install လုပ်ပြီးနောက် `-DCMAKE_PREFIX_PATH=/opt/rom` ဖြင့် SDK ကိုသုံးနိုင်သည်။ ဖယ်ရှားရန် `sudo apt remove rom-sdk` ကို သုံးပါ။ Source script နဲ့ binary package ကို တစ်ပြိုင်နက် မတပ်ဆင်ပါနှင့်။ Source install မှ package သို့ ပြောင်းမည်ဆိုလျှင် package မတပ်မီ `./uninstall_rom_sdk.sh` လုပ်ပါ။
 
 ### $\color{cyan}{\text{Script နဲ့ (အကြံပြု)}}$
 

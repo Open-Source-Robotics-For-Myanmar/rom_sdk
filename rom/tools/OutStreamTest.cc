@@ -1,6 +1,8 @@
 #include "rom/tools/OutStream.h"
 
 #include <cctype>
+#include <chrono>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -119,6 +121,32 @@ TEST(OutStreamTest, EmbeddedNewlineStartsNewTimestampedLine)
     ASSERT_EQ(lines.size(), 2u);
     EXPECT_EQ(lines[0], "a");
     EXPECT_EQ(lines[1], "b\033[0m");
+}
+
+TEST(OutStreamTest, TimestampUsesSteadyClock)
+{
+    const int64_t before_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                  std::chrono::steady_clock::now().time_since_epoch())
+                                  .count();
+    StdoutCapture capture;
+    rom::tools::cout << "tick";
+    const std::string out = capture.Finish();
+    const int64_t after_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                 std::chrono::steady_clock::now().time_since_epoch())
+                                 .count();
+
+    const std::size_t close = out.find("] ");
+    ASSERT_NE(close, std::string::npos);
+    const std::string ts = out.substr(1, close - 1);
+    const std::size_t dot = ts.find('.');
+    ASSERT_NE(dot, std::string::npos);
+
+    const int64_t sec = std::stoll(ts.substr(0, dot));
+    const int64_t nsec = std::stoll(ts.substr(dot + 1));
+    const int64_t logged_ns = sec * 1'000'000'000 + nsec;
+
+    EXPECT_GE(logged_ns, before_ns);
+    EXPECT_LE(logged_ns, after_ns);
 }
 
 }  // namespace

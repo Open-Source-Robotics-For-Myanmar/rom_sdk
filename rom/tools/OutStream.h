@@ -16,11 +16,11 @@ namespace rom::tools
 
 // A fast, thread-safe, syscall-backed stand-in for std::cout.
 //
-// Talks to the terminal only through raw ::write() calls and formats numbers
+// talks to the terminal only through raw ::write() calls and formats numbers
 // with std::to_chars (locale-free, no allocation). A thread-local buffer
 // accumulates each line; the output mutex is taken only once per line to
 // flush it as a single write(), so concurrent threads never interleave
-// mid-line. Every line is prefixed with a raw Unix epoch timestamp,
+// mid-line. Every line is prefixed with a steady_clock timestamp,
 // "[seconds.nanoseconds] ". Any '\n' ends the current line and flushes it.
 //
 // Most code should use rom::tools::cout (see CoutTag.h) instead of this class.

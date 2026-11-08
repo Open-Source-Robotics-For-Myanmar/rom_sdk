@@ -1,10 +1,11 @@
 #include "rom/tools/OutStream.h"
 
 #include <cerrno>
+#include <chrono>
+#include <cinttypes>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <ctime>
 #include <mutex>
 
 #include <unistd.h>
@@ -70,14 +71,15 @@ void raw_append(Buffer& b, const char* data, std::size_t len)
     b.len += len;
 }
 
-// Raw Unix epoch timestamp, e.g. "[1718352012.345678901] ".
+// Monotonic steady_clock timestamp, e.g. "[1234.567890123] ".
 std::size_t format_timestamp(char* out, std::size_t cap)
 {
-    timespec ts{};
-    clock_gettime(CLOCK_REALTIME, &ts);
-    const int n = std::snprintf(out, cap, "[%lld.%09lld] ",
-                                static_cast<long long>(ts.tv_sec),
-                                static_cast<long long>(ts.tv_nsec));
+    const int64_t total_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                 std::chrono::steady_clock::now().time_since_epoch())
+                                 .count();
+    const int64_t sec = total_ns / 1'000'000'000;
+    const int64_t nsec = total_ns % 1'000'000'000;
+    const int n = std::snprintf(out, cap, "[%" PRId64 ".%09" PRId64 "] ", sec, nsec);
     return n > 0 ? static_cast<std::size_t>(n) : 0;
 }
 

@@ -56,11 +56,6 @@ done
 command -v cmake >/dev/null || die "cmake not found (sudo apt install cmake)"
 command -v c++ >/dev/null || die "C++ compiler not found (sudo apt install g++)"
 
-if [[ -f "${DEST}${MANIFEST}" ]]; then
-  log "Existing install found in ${DEST}${PREFIX}; removing it first"
-  "${REPO_ROOT}/uninstall_rom_sdk.sh"
-fi
-
 build_dir="$(mktemp -d "${TMPDIR:-/tmp}/rom_sdk_build.XXXXXX")"
 trap 'rm -rf "${build_dir}"' EXIT
 log "Build dir: ${build_dir}"
@@ -76,6 +71,11 @@ cmake --build "${build_dir}" -j "${jobs}"
 if [[ "${run_tests}" == "ON" ]]; then
   log "Running tests"
   ctest --test-dir "${build_dir}" --output-on-failure
+fi
+
+if [[ -f "${DEST}${MANIFEST}" ]]; then
+  log "Existing install found in ${DEST}${PREFIX}; removing it before installing new build"
+  "${REPO_ROOT}/uninstall_rom_sdk.sh"
 fi
 
 log "Installing into ${DEST}${PREFIX}"

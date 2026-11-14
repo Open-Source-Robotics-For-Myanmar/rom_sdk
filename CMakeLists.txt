@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16...3.28)
 
 project(rom
-  VERSION 0.1.1
+  VERSION 0.1.2
   DESCRIPTION "ROM Robotics C++17 SDK"
   LANGUAGES CXX)
 
@@ -45,7 +45,6 @@ function(rom_add_library name)
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
   set_target_properties(${name} PROPERTIES
     OUTPUT_NAME rom_${name}
-    VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR})
 endfunction()
 
@@ -62,8 +61,12 @@ rom_add_library(robotics
   rom/robotics/control/pid/PidController.cc
   rom/robotics/guidance/png/PngGuidance.cc)
 
+# rom::intelligence - namespace rom::intelligence.
+rom_add_library(intelligence
+  rom/intelligence/model/rl/bc_mlp_v4_ppo/BcMlpV4Ppo.cc)
+
 # ---- Install ----------------------------------------------------------------
-install(TARGETS tools robotics
+install(TARGETS tools robotics intelligence
   EXPORT romTargets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -121,7 +124,8 @@ if(ROM_BUILD_TESTS)
     rom/tools/OutStreamTest.cc
     rom/tools/StyleTest.cc
     rom/robotics/control/pid/PidControllerTest.cc
-    rom/robotics/guidance/png/PngGuidanceTest.cc)
-  target_link_libraries(rom_tests PRIVATE rom::tools rom::robotics GTest::gtest_main)
+    rom/robotics/guidance/png/PngGuidanceTest.cc
+    rom/intelligence/model/rl/bc_mlp_v4_ppo/BcMlpV4PpoTest.cc)
+  target_link_libraries(rom_tests PRIVATE rom::tools rom::robotics rom::intelligence GTest::gtest_main)
   gtest_discover_tests(rom_tests)
 endif()

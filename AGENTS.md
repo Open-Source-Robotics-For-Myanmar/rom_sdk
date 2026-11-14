@@ -27,3 +27,5 @@
   - BasedOnStyle: Google
   - Standard: c++17
   - BreakBeforeBraces: Allman
+
+- release ထုတ်ရာတွင် (.github/workflows/release.yml) code ပြင်ဆင်ထားခြင်းမရှိသော binary များကို ထပ်မံ build မပြုလုပ်ရ
